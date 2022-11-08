@@ -1,10 +1,12 @@
 import argparse
 import socket
-import scapy
+from sys import flags
+from scapy.all import IP, TCP
 
 MAX_HOPS = 30
 DST_PORT = 80
-TARGET = "NOT SPECIFIED"
+TARGET = ""
+HOST = "172.17.149.28"
 
 def setParams():
     parser = argparse.ArgumentParser()
@@ -34,3 +36,19 @@ def setParams():
 
 if __name__ == '__main__':
     setParams()
+
+    TARGET = socket.gethostbyname(TARGET)
+    ip = IP(dst=TARGET)
+    tcp = TCP(sport=26121, dport=DST_PORT, flags="S")
+    packet = ip/tcp
+    packet.show()
+    ETH_P_IP = 0x800
+    recv_sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_IP)) 
+    #recv_sock.bind((HOST, 26121))
+    s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
+    s.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+    s.sendto(bytes(packet), (TARGET, DST_PORT))
+    
+    msgFromServer = recv_sock.recv(65565)
+    recieved = IP(msgFromServer)
+    recieved.show()
