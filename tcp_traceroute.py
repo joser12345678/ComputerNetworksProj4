@@ -31,6 +31,26 @@ def recieveProbe():
     except Exception as e:
         print("No reply, timeout")
 
+# sends the traceroute probes. sends entire group and creates a dictionary with
+# key value pairs. The key = (ttl, id), and the value = time in ns we sent it
+def sendTraces():
+    sent_packets = {}
+
+    for i in range(MAX_HOPS):
+        for j in range(3):
+            sent_packets[(i, j)] = time.time_ns()
+            sendProbe(i, j)
+
+    return sent_packets
+
+# drives the traceroute program, sends all probes and listens for them
+def traceroute_driver():
+    sent_probes = sendTraces()
+    print(sent_probes)
+    recieveProbe()
+    recieveProbe()
+    recieveProbe()
+
 def setParams():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', metavar='MAX_HOPS', type=int, help="Max hops to probe (default = 30)")
@@ -68,8 +88,7 @@ if __name__ == '__main__':
 
     #sendProbe(1, 1)
     #sendProbe(1, 2)
-    sendProbe(1, 3)
-    recieveProbe()
+    traceroute_driver()
 
     #print(time.time_ns())
     
