@@ -15,7 +15,7 @@ def sendProbe(my_ttl, my_id):
     ip = IP(dst=TARGET, ttl=my_ttl, id = my_id)
     tcp = TCP(sport=recv_sock.getsockname()[1], dport=DST_PORT, flags="S")
     packet = ip/tcp
-    print(IP(raw(packet))[IP].id)
+    #print(IP(raw(packet))[IP].id)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
     s.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
@@ -27,9 +27,9 @@ def recieveProbe():
     try:
         msgFromServer = recv_sock.recv(65565)
         recieved = Ether(msgFromServer)
-        recieved.show()
+        return recieved
     except Exception as e:
-        print("No reply, timeout")
+        return 0
 
 # sends the traceroute probes. sends entire group and creates a dictionary with
 # key value pairs. The key = (ttl, id), and the value = time in ns we sent it
@@ -43,13 +43,25 @@ def sendTraces():
 
     return sent_packets
 
+# given a dictionary of probes, determine if a reply
+# is a reply to a probe
+def isProbe(probe_dict, recieved_packet):
+    packet_tuple = (recieved_packet[IP].ttl, recieved_packet[IP].id)
+    if packet_tuple in probe_dict:
+        return True
+    else:
+        return False
+
 # drives the traceroute program, sends all probes and listens for them
 def traceroute_driver():
     sent_probes = sendTraces()
-    print(sent_probes)
-    recieveProbe()
-    recieveProbe()
-    recieveProbe()
+    total_probes = len(sent_probes)
+    timeout_count = 0
+
+    while total_probes != 0 and timeout_count != 10:
+        print('not implemented')
+    
+
 
 def setParams():
     parser = argparse.ArgumentParser()
@@ -88,7 +100,8 @@ if __name__ == '__main__':
 
     #sendProbe(1, 1)
     #sendProbe(1, 2)
-    traceroute_driver()
+    #traceroute_driver()
+    recieveProbe().show()
 
     #print(time.time_ns())
     
