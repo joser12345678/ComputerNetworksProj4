@@ -1,7 +1,7 @@
 import argparse
 import socket
 from sys import flags
-from scapy.all import IP, TCP, Ether, raw
+from scapy.all import IP, TCP, Ether, ICMP, IPerror
 import time
 
 MAX_HOPS = 30
@@ -46,8 +46,9 @@ def sendTraces():
 # given a dictionary of probes, determine if a reply
 # is a reply to a probe
 def isProbe(probe_dict, recieved_packet):
-    packet_tuple = (recieved_packet[IP].ttl, recieved_packet[IP].id)
+    packet_tuple = (recieved_packet[IP][ICMP].ttl, recieved_packet[IP][ICMP].id)
     if packet_tuple in probe_dict:
+        print(packet_tuple)
         return True
     else:
         return False
@@ -59,7 +60,14 @@ def traceroute_driver():
     timeout_count = 0
 
     while total_probes != 0 and timeout_count != 10:
-        print('not implemented')
+        returnedProbe = recieveProbe()
+
+        # if there was no returned probe, it is a timeout
+        if returnedProbe == 0:
+            timeout_count = timeout_count + 1
+        # if the probe is in the list, it is a probe reply
+        elif isProbe(sent_probes, returnedProbe):
+            total_probes = total_probes - 1
     
 
 
@@ -99,9 +107,17 @@ if __name__ == '__main__':
     recv_sock.bind(('ens3', 0))
 
     #sendProbe(1, 1)
-    #sendProbe(1, 2)
+    sendProbe(1, 2)
     #traceroute_driver()
-    recieveProbe().show()
+    recieved_packet = recieveProbe()
+    #recieved_packet.show()
+    icmp_error = recieved_packet[ICMP]
+    #icmp_error.show()
+    icmp = icmp_error[IPerror]
+    icmp.show()
+    
+    #packet_tuple = (recieved_packet[IP][ICMP][IP].ttl, recieved_packet[IP][ICMP][IP].id)
+    #print(packet_tuple)
 
     #print(time.time_ns())
     
