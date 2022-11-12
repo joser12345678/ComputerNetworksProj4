@@ -9,7 +9,6 @@ DST_PORT = 80
 TARGET = ""
 time_start = 0
 
-
 # sends a single probe with specified ttl
 def sendProbe(my_ttl, my_id):
     ip = IP(dst=TARGET, ttl=my_ttl, id = my_id)
@@ -80,22 +79,45 @@ def isProbe(probe_dict, recieved_packet):
 
 # prints a single line of the output
 def print_hop_line(hop_num, hop_info):
-    print(str(hop_num) + ' ' + str(hop_info))
+    full_str = str(hop_num) + '  '
+    prev_ip = ""
+
+    for probe in hop_info: 
+        if len(probe) == 2:
+            #simply append the time
+            if prev_ip == probe[1]:
+                full_str = full_str + str(round(probe[0], 3)) + ' ms  '
+            else:
+                prev_ip = probe[1]
+                try:
+                    name = socket.getnameinfo((probe[1], DST_PORT), 0)
+                    full_str = full_str + name[0] + ' (' + probe[1] + ') ' + str(round(probe[0], 3)) + ' ms  '
+                except Exception as e:
+                    full_str = full_str + probe[1] + ' (' + probe[1] + ') ' + str(round(probe[0], 3)) + ' ms  '
+        else:
+            full_str = full_str + probe[0] + ' '
+    print(full_str)
 
 # prints the results of the traceroute program
 # the format of the results is: dict, key=id, value=[hop#, time, ip]
 def print_results(results):
     curr_hop = 1
     curr_hop_return = list()
+    final_hop = False
     for i in range(12400, 12400 + (MAX_HOPS*3)):
         hop_list = results[i]
         if curr_hop != hop_list[0]:
             print_hop_line(curr_hop, curr_hop_return)
             curr_hop_return.clear()
             curr_hop = hop_list[0]
+            if final_hop:
+                return
         # if len of the list is 3, there is an ip in there
         if len(hop_list) == 3:
             curr_hop_return.append((hop_list[1], hop_list[2]))
+            # if the target occurs, this is the last hop we will print
+            if hop_list[2] == TARGET:
+                final_hop = True
         else:
             curr_hop_return.append(('*'))
 
@@ -163,17 +185,3 @@ if __name__ == '__main__':
     #sendProbe(1, 1)
     #sendProbe(1, 2)
     traceroute_driver()
-    # recieved_packet = recieveProbe()
-    # print(isProbe(None, recieved_packet))
-    # print(recieved_packet[IP].proto)
-    # icmp_error = recieved_packet[ICMP]
-    # print(icmp_error.type)
-    # print(icmp_error.code)
-    # icmp = icmp_error[IPerror]
-    # icmp.show()
-    
-    #packet_tuple = (recieved_packet[IP][ICMP][IP].ttl, recieved_packet[IP][ICMP][IP].id)
-    #print(packet_tuple)
-
-    #print(time.time_ns())
-    
