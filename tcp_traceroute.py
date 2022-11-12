@@ -13,7 +13,7 @@ time_to_send = 0
 # sends a single probe with specified ttl
 def sendProbe(my_ttl, my_id):
     ip = IP(dst=TARGET, ttl=my_ttl, id = my_id)
-    tcp = TCP(sport=recv_sock.getsockname()[1], dport=DST_PORT, flags="S")
+    tcp = TCP(sport=my_id, dport=DST_PORT, flags="S", seq=my_id)
     packet = ip/tcp
     #packet.show()
 
@@ -34,7 +34,7 @@ def recieveProbe():
 # key value pairs. The key = (ttl, id), and the value = time in ns we sent it
 def sendTraces():
     sent_packets = {}
-    id = 1234
+    id = 12400
     
     for i in range(1, MAX_HOPS + 1):
         for j in range(3):
@@ -55,18 +55,22 @@ def isProbe(probe_dict, recieved_packet):
             return False
         #return True
         icmp_error = icmp[IPerror]
-        #print(icmp_error.id)
         if icmp_error.id in probe_dict:
             probe_dict[icmp_error.id][0] = (time.time_ns() - probe_dict[icmp_error.id][0])/1000000
-            print(probe_dict[icmp_error.id][0])
+            print(icmp_error.id)
+            #print(probe_dict[icmp_error.id][0])
             return True
         else:
             return False
-    
-    # if the ip packet is a tcp packet, parse it as such,
-    # looking for a syn ack reply to our initial syn packet
+    # if a tcp packet, it is a reply from the server
     elif recieved_packet[IP].proto == 6:
-        #recieved_packet.show()
+        tcp_pac = recieved_packet[TCP]
+        #print(tcp_pac.ack)
+        if (tcp_pac.ack - 1) in probe_dict and tcp_pac.flags == "SA" and tcp_pac.sport == DST_PORT and tcp_pac.dport ==(tcp_pac.ack - 1):
+            probe_dict[(tcp_pac.ack - 1)][0] = (time.time_ns() - probe_dict[(tcp_pac.ack - 1)][0])/1000000
+            print(probe_dict[(tcp_pac.ack - 1)])
+            return True
+    else:
         return False
 
 # drives the traceroute program, sends all probes and listens for them
