@@ -7,7 +7,7 @@ import time
 MAX_HOPS = 30
 DST_PORT = 80
 TARGET = ""
-time_to_send = 0
+time_start = 0
 
 
 # sends a single probe with specified ttl
@@ -38,9 +38,12 @@ def sendTraces():
     
     for i in range(1, MAX_HOPS + 1):
         for j in range(3):
-            sent_packets[id] = [time.time_ns(), i]
+            sent_packets[id] = [i]
             sendProbe(i, id)
             id = id + 1
+
+    global time_start
+    time_start = time.time_ns()
     
     return sent_packets
 
@@ -56,9 +59,10 @@ def isProbe(probe_dict, recieved_packet):
         #return True
         icmp_error = icmp[IPerror]
         if icmp_error.id in probe_dict:
-            probe_dict[icmp_error.id][0] = (time.time_ns() - probe_dict[icmp_error.id][0])/1000000
-            print(icmp_error.id)
-            #print(probe_dict[icmp_error.id][0])
+            probe_dict[icmp_error.id].append((time.time_ns() - time_start)/1000000)
+            probe_dict[icmp_error.id].append(recieved_packet[IP].src)
+            #print(icmp_error.id)
+            #print(probe_dict[icmp_error.id])
             return True
         else:
             return False
@@ -67,30 +71,54 @@ def isProbe(probe_dict, recieved_packet):
         tcp_pac = recieved_packet[TCP]
         #print(tcp_pac.ack)
         if (tcp_pac.ack - 1) in probe_dict and tcp_pac.flags == "SA" and tcp_pac.sport == DST_PORT and tcp_pac.dport ==(tcp_pac.ack - 1):
-            probe_dict[(tcp_pac.ack - 1)][0] = (time.time_ns() - probe_dict[(tcp_pac.ack - 1)][0])/1000000
-            print(probe_dict[(tcp_pac.ack - 1)])
+            probe_dict[(tcp_pac.ack - 1)].append((time.time_ns() - time_start)/1000000)
+            probe_dict[(tcp_pac.ack - 1)].append(recieved_packet[IP].src)
+            #print(probe_dict[(tcp_pac.ack - 1)])
             return True
     else:
         return False
+
+# prints a single line of the output
+def print_hop_line(hop_num, hop_info):
+    print(str(hop_num) + ' ' + str(hop_info))
+
+# prints the results of the traceroute program
+# the format of the results is: dict, key=id, value=[hop#, time, ip]
+def print_results(results):
+    curr_hop = 1
+    curr_hop_return = list()
+    for i in range(12400, 12400 + (MAX_HOPS*3)):
+        hop_list = results[i]
+        if curr_hop != hop_list[0]:
+            print_hop_line(curr_hop, curr_hop_return)
+            curr_hop_return.clear()
+            curr_hop = hop_list[0]
+        # if len of the list is 3, there is an ip in there
+        if len(hop_list) == 3:
+            curr_hop_return.append((hop_list[1], hop_list[2]))
+        else:
+            curr_hop_return.append(('*'))
 
 # drives the traceroute program, sends all probes and listens for them
 def traceroute_driver():
     sent_probes = sendTraces()
     total_probes = len(sent_probes)
-    timeout_count = 0
+    timeout_count = time.time()
     #print(sent_probes)
 
-    while total_probes != 0 and timeout_count != 10:
+    while total_probes != 0 and time.time() - timeout_count < 5:
         returnedProbe = recieveProbe()
 
         # if there was no returned probe, it is a timeout
         if returnedProbe == 0:
-            timeout_count = timeout_count + 1
-            print('timeout')
+            continue
         # if the probe is in the list, it is a probe reply
         elif isProbe(sent_probes, returnedProbe):
             total_probes = total_probes - 1
+            timeout_count = time.time()
             #print(total_probes)
+    
+    print_results(sent_probes)
     
 
 
