@@ -36,7 +36,7 @@ def sendTraces():
     sent_packets = {}
     id = 12400
     
-    for i in range(1, MAX_HOPS + 1):
+    for i in range(1, MAX_HOPS + 2):
         for j in range(3):
             sent_packets[id] = [i]
             sendProbe(i, id)
@@ -105,7 +105,7 @@ def print_results(results):
     curr_hop = 1
     curr_hop_return = list()
     final_hop = False
-    for i in range(12400, 12400 + (MAX_HOPS*3)):
+    for i in range(12400, 12400 + (MAX_HOPS*3) + 1):
         hop_list = results[i]
         if curr_hop != hop_list[0]:
             print_hop_line(curr_hop, curr_hop_return)
@@ -168,7 +168,7 @@ def setParams():
     if args.m:
         MAX_HOPS = args.m
     if args.p:
-        DST_PORT = args.p
+        DST_PORT = int(args.p)
 
 
 if __name__ == '__main__':
