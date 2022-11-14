@@ -7,6 +7,7 @@ import time
 MAX_HOPS = 30
 DST_PORT = 80
 TARGET = ""
+TARGET_STR = ""
 time_start = 0
 
 # sends a single probe with specified ttl
@@ -154,14 +155,14 @@ def setParams():
 
     # parse arguments and put into args
     args = parser.parse_args()
-    global TARGET, MAX_HOPS, DST_PORT
+    global TARGET_STR, MAX_HOPS, DST_PORT
 
     # a target must always be specified
     if not args.t:
         print("No target specified. Terminating.")
         exit()
     else:
-        TARGET = args.t
+        TARGET_STR = args.t
     
     # set optional arguments
     if args.m:
@@ -173,7 +174,8 @@ def setParams():
 if __name__ == '__main__':
     setParams()
 
-    TARGET = socket.gethostbyname(TARGET)
+    TARGET = socket.gethostbyname(TARGET_STR)
+    print('traceroute to ' + TARGET_STR + ' (' + str(TARGET) + '), ' + str(MAX_HOPS) + ' hops max, TCP SYN to port ' + str(DST_PORT))
 
     s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
     
